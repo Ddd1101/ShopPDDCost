@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.1/package/dist/xlsx.full.min.js"></script>
+    <script>
+        let en_code = ['s', 'S', 'm', 'M', 'l', 'L', 'x', 'X']
+        let worksheet = null
+        let countByProduct = {}
+        let counter = {}
+        let en_size = ['X', 'L', 'S', 'M']
+        let en_size_complete = ['S', 'M', 'X', 'L', 'XL', 'XXL']
+
+        let prices = {
+            '儿童纯棉套装': {
+                90: 12.5,
+                100: 12.5,
+                110: 13.5,
+                120: 14.5,
+                130: 15.5,
+                140: 16.5,
+                150: 17.5,
+                160: 20.5
+            },
+            '莫代尔吊带': {
+                90: 4,
+                100: 4,
+                110: 4,
+                120: 4,
+                130: 4,
+                140: 4,
+                150: 4,
+                160: 4
+            },
+            '莫代尔吊带背心': {
+                90: 4,
+                100: 4,
+                110: 4,
+                120: 4,
+                130: 4,
+                140: 4,
+                150: 4,
+                160: 4
+            },
+            '纯棉秋裤': {
+                90: 5.6,
+                100: 5.6,
+                110: 5.9,
+                120: 6.4,
+                130: 6.8,
+                140: 7.2,
+                150: 7.6
+            },
+            '亲子沙滩裙': {
+                110: 10.5,
+                120: 11,
+                130: 11.5,
+                140: 12,
+                150: 12.5,
+                160: 13,
+                165: 13.5,
+                170: 14,
+                'S': 17,
+                'M': 17,
+                'L': 17,
+                'XL': 17,
+                '2XL': 17
+            },
+            '加绒单衣': {
+                100: 8.2,
+                110: 8.2,
+                120: 8.2,
+                130: 8.2,
+                140: 8.2,
+                150: 8.2
+            },
+            '双面磨毛': {
+                100: 13,
+                110: 14,
+                120: 15,
+                130: 17,
+                140: 18,
+                150: 19,
+                160: 21
+            }
+
+        }
+
+        // 从文件数据中解析出excel内容
+        function parse(data) {
+            const workbook = XLSX.read(data); // 从原始数据获取工作簿
+            // 后端使用可以使用 readFile() 方法直接读取文件
+
+            var first_sheet_name = workbook.SheetNames[0]; // 获得第一个工作表名称
+
+            worksheet = workbook.Sheets[first_sheet_name]; // 获取工作表
+
+            // console.log(worksheet['A1']); // 读取并打印A1端元格数据
+
+            // console.log(worksheet['!merges']); // 打印所有合并单元格信息数组
+
+            // console.log(worksheet['!ref']); // 打印输出当前工作表使用的范围
+
+            let goodTree = {}
+
+            // 品名整理
+            var range = XLSX.utils.decode_range(worksheet['!ref']);
+            var totalRows = range.e.r - range.s.r + 1;
+
+            goodTree = {}
+
+            for (var i = 1; i < totalRows; ++i) {
+                var cellValue = readCell(i, 4);
+                skuTmp = cellValue.split(',');
+                // 品名
+                goodName = readCell(i, 1)
+                // 规格
+                size = NumFormate4Print(skuTmp[1])
+                // 数量
+                var isDouble = (skuTmp[0].includes('两') || skuTmp[0].includes('双条'));
+                num = readCell(i, 8).split('.')[0]
+                // 花型
+                if (!isDouble) {
+                    // 花色
+                    sku = skuTmp[0].split('【')[0]
+                    // console.log("花色 " + sku);
+                    // 品名
+                    if (!(goodName in goodTree)) {
+                        goodTree[goodName] = {};
+                    }
+                    // 品名 - 花色
+                    if (!(sku in goodTree[goodName])) {
+                        goodTree[goodName][sku] = {};
+                    }
+                    // 品名 - 花色 - 规格
+                    if (!(size in goodTree[goodName][sku])) {
+                        goodTree[goodName][sku][size] = num;
+                    } else {
+                        goodTree[goodName][sku][size] += num;
+                    }
+                } else {
+                    isDiff = ('+' in skuTmp[0]);
+                    if (!isDiff) {
+                        // 花色
+                        sku = skuTmp[0].split('【')[0][0];
+                        num *= 2;
+                        // 品名
+                        if (!(goodName in goodTree)) {
+                            goodTree[goodName] = {}
+                        }
+                        // 品名 - 花色
+                        if (!(sku in goodTree[goodName])) {
+                            goodTree[goodName][sku] = {};
+                        }
+                        // 品名 - 花色 - 规格
+                        if (!(size in goodTree[goodName][sku])) {
+                            goodTree[goodName][sku][size] = num;
+                        } else {
+                            goodTree[goodName][sku][size] += num;
+                        }
+                    } else {
+                        // 花色
+                        if (goodName == "纯棉秋裤") {
+                            sku1 = skuTmp[0].split('】')[1].split('+')[0];
+                            sku2 = skuTmp[0].split('】')[1].split('+')[1];
+                        } else if (goodName == "女童安全裤") {
+                            sku1 = skuTmp[0].split('】')[1].split('+')[0];
+                            sku2 = skuTmp[0].split('】')[1].split('+')[1];
+                        } else {
+                            sku1 = skuTmp[0].split('【')[0].split('+')[0];
+                            sku2 = skuTmp[0].split('【')[0].split('+')[1];
+                        }
+                        // 品名
+                        if (!(goodName in goodTree)) {
+                            goodTree[goodName] = {}
+                        }
+                        // 品名 - 花色1
+                        if (!(sku1 in goodTree[goodName])) {
+                            goodTree[goodName][sku1] = {};
+                        }
+                        // 品名 - 花色1 - 规格
+                        if (!(size in goodTree[goodName][sku1])) {
+                            goodTree[goodName][sku1][size] = num;
+                        } else {
+                            goodTree[goodName][sku1][size] += num;
+                        }
+                        // 品名 - 花色2
+                        if (!(sku2 in goodTree[goodName])) {
+                            goodTree[goodName][sku2] = {};
+                        }
+                        // 品名 - 花色2 - 规格
+                        if (!(size in goodTree[goodName][sku2])) {
+                            goodTree[goodName][sku2][size] = num;
+                        } else {
+                            goodTree[goodName][sku2][size] += num;
+                        }
+                    }
+                }
+            }
+
+            // 制表
+            let beihuoList = new Array();
+            let beihuoTable = new Array();
+
+            for (var goodName in goodTree) {
+                beihuoList.push(goodName)
+                for (var sku in goodTree[goodName]) {
+                    beihuoList.push(sku)
+                    let tableSortForSize = new Array();
+                    for (var size in goodTree[goodName][sku]) {
+                        beihuoList.push(size)
+                        beihuoList.push(goodTree[goodName][sku][size])
+                        tableSortForSize.push(beihuoList.slice())
+                        beihuoList.pop()
+                        beihuoList.pop()
+                    }
+                    beihuoList.pop()
+                    // 按规格排序
+                    tableSortForSize.sort(function (a, b) {
+                        return a[2] - b[2];
+                    })
+                    if (tableSortForSize[tableSortForSize.length - 1][2] == '90 cm') {
+                        tableSortForSize.push(0, tableSortForSize[tableSortForSize.length - 1].slice())
+                        tableSortForSize.pop()
+                    }
+                    let strTmp1 = ""
+                    let strTmp2 = ""
+                    for (var each of tableSortForSize) {
+                        // 1. 先按品类统计数量
+                        if (!(each[0] in countByProduct)) {
+                            countByProduct[each[0]] = 0;
+                        }
+                        countByProduct[each[0]] += Number(each[3])
+                        if (!(each[0] in counter)) {
+                            counter[each[0]] = {};
+                        }
+                        if (strTmp1 != "") {
+                            strTmp1 += '\n';
+                            strTmp2 += '\n';
+                        }
+                        strTmp1 += each[2];
+                        strTmp2 += String(each[3]);
+                        // 尺码分英文码和数字码
+                        if (en_size.includes(each[2].trim()[0])) {
+                            if (!(each[2].strip() in counter[each[0]])) {
+                                counter[each[0]][each[2].strip()] = 0;
+                            }
+                            counter[each[0]][each[2].strip()] += each[3];
+                        } else {
+                            if (!(parseInt(each[2].split('cm')[0].split(' ')[0]) in counter[each[0]])) {
+                                counter[each[0]][parseInt(each[2].split('cm')[0].split(' ')[0])] = 0;
+                            }
+                            counter[each[0]][parseInt(each[2].split('cm')[0].split(' ')[0])] += parseInt(each[3]);
+                        }
+                    }
+                    listTmp = tableSortForSize[0];
+                    listTmp[2] = strTmp1;
+                    listTmp[3] = strTmp2;
+                    beihuoTable.push(listTmp.slice());
+
+                    tableSortForSize = [];
+                }
+                beihuoList.pop();
+            }
+
+            console.log("+++++++++++++");
+            console.log(countByProduct);
+            console.log(beihuoTable);
+            console.log(counter);
+
+            MakeFormateFile(beihuoTable);
+        }
+
+        function MakeFormateFile(table) {
+            priceSum = 0
+            for (var good in counter) {
+                sum = 0;
+                for (var sku in counter[good]) {
+                    priceSum += (Number(prices[good][sku]) * Number(counter[good][sku]));
+                }
+            }
+            console.log('货款总额' + String(priceSum));
+
+            var element = document.getElementById('result');
+            element.innerHTML = '货款总额 -- ' + String(priceSum);
+        }
+
+        function readCell(x, y) {
+            var cellCoordinates = { c: y, r: x };
+            desiredCell = worksheet[XLSX.utils.encode_cell(cellCoordinates)];
+            var cellValue = desiredCell ? desiredCell.v : undefined;
+            return cellValue;
+        }
+
+        function NumFormate4Print(numStr) {
+            var res = "";
+            if (en_code.includes(numStr[0])) {
+                for (var i = 0; i < numStr.length; i++) {
+                    if (en_code.includes(numStr[i])) {
+                        res += numStr[i];
+                    } else {
+                        break;
+                    }
+                }
+
+                let fomateSpaceNum = 5 - res.length;
+
+                for (var k = 0; k < fomateSpaceNum; k++) {
+                    res = " " + res;
+                }
+            } else {
+                for (var i = 0; i < numStr.length; i++) {
+                    if (numStr[i] >= '0' && numStr[i] <= '9') {
+                        res += numStr[i];
+                    } else {
+                        if (res[0] == '9') {
+                            res += " ";
+                        }
+                        break;
+                    }
+                }
+                res += "cm";
+            }
+
+            return res;
+        }
+
+        // 读取文件数据
+        function read(file) {
+            let reader = new FileReader();
+            reader.onload = function (e) {
+                parse(e.target.result);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+
+    </script>
+</head>
+
+<body>
+    <input type="file" onchange="read(this.files[0])" /><br>
+    <textarea readonly id="result" style="height: 100px; width: 200px; border: none;">Hello, World!</textarea>
+</body>
+
+</html>
