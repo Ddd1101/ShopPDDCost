@@ -83,6 +83,15 @@
                 140: 18,
                 150: 19,
                 160: 21
+            },
+            '加绒裤': {
+                90: 7,
+                100: 7,
+                110: 7,
+                120: 7,
+                130: 7.5,
+                140: 7.5,
+                150: 7.5
             }
 
         }
@@ -112,7 +121,7 @@
 
             for (var i = 1; i < totalRows; ++i) {
                 var cellValue = readCell(i, 4);
-                skuTmp = cellValue.split(',');
+                skuTmp = cellValue.split(' ');
                 // 品名
                 goodName = readCell(i, 1)
                 // 规格
@@ -140,7 +149,12 @@
                         goodTree[goodName][sku][size] += num;
                     }
                 } else {
-                    isDiff = ('+' in skuTmp[0]);
+                    if(skuTmp[0].indexOf("+") == -1){
+                        isDiff = false;
+                    } else {
+                        isDiff = true;
+                    }
+                    
                     if (!isDiff) {
                         // 花色
                         sku = skuTmp[0].split('【')[0][0];
