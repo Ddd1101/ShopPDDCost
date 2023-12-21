@@ -295,9 +295,6 @@
             for (var good in counter) {
                 sum = 0;
                 for (var sku in counter[good]) {
-                    console.log("================");
-                    console.log(prices[good][sku]);
-                    console.log(counter[good][sku]);
                     priceSum += (Number(prices[good][sku]) * Number(counter[good][sku]));
                 }
             }
