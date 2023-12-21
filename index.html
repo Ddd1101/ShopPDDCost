@@ -217,9 +217,6 @@
             let beihuoList = new Array();
             let beihuoTable = new Array();
 
-            console.log("+++++++");
-            console.log(goodTree);
-
             for (var goodName in goodTree) {
                 beihuoList.push(goodName)
                 for (var sku in goodTree[goodName]) {
@@ -270,7 +267,6 @@
                             }
                             counter[each[0]][parseInt(each[2].split('cm')[0].split(' ')[0])] += parseInt(each[3]);
                         }
-                        console.log(each[3]);
                     }
                     listTmp = tableSortForSize[0];
                     listTmp[2] = strTmp1;
