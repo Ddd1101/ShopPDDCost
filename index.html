@@ -298,6 +298,8 @@
 
             var element = document.getElementById('result');
             element.innerHTML = '货款总额 -- ' + String(priceSum);
+
+
         }
 
         function readCell(x, y) {
@@ -342,6 +344,9 @@
 
         // 读取文件数据
         function read(file) {
+            counter = {};
+            countByProduct = {};
+            worksheet = null;
             let reader = new FileReader();
             reader.onload = function (e) {
                 parse(e.target.result);
