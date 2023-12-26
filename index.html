@@ -195,9 +195,9 @@
                         }
                         // 品名 - 花色1 - 规格
                         if (!(size in goodTree[goodName][sku1])) {
-                            goodTree[goodName][sku1][size] = num;
+                            goodTree[goodName][sku1][size] = Number(num);
                         } else {
-                            goodTree[goodName][sku1][size] += num;
+                            goodTree[goodName][sku1][size] += Number(num);
                         }
                         // 品名 - 花色2
                         if (!(sku2 in goodTree[goodName])) {
