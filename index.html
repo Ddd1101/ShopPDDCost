@@ -124,6 +124,9 @@
                 skuTmp = cellValue.split(' ');
                 // 品名
                 goodName = readCell(i, 1)
+                if(goodName == ""){
+                    continue;
+                }
                 // 规格
                 size = NumFormate4Print(skuTmp[1])
                 // 数量
